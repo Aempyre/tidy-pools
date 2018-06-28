@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+        .buttonSimple {
+            background-color: azure;
+            padding: 14px 28px;
+            font-size: 16px;
+            cursor: pointer;
+        }  
+        </style>
+        <script  type='text/javascript'
+            src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js">
+        </script>
+        <!-- <script>
+            function testJQuery() {
+                alert("Using JQuery: " + $().jquery);
+            }
+        </script> -->
+        <script>
+
+            function showTideInformation() {
+                
+                document.getElementById("tidesHereHeader").innerHTML 
+                = "Current forecast of low tides during the day:";
+
+                var tableTop    = '<table style="width:100%">';
+                tableTop       += "<tr>"; 
+                tableTop       += "<th> </th>";     // TODO a hack, fix proper
+                tableTop       += "<th>Time</th>";
+                tableTop       += "<th> </th>";     // TODO a hack, fix proper
+                tableTop       += "<th>Zone</th>";
+                tableTop       += "<th> </th>";
+                tableTop       += "<th>Level</th>";
+                tableTop       += "<th> </th>";     // TODO a hack, fix proper
+                tableTop       += "<th>Type</th>";
+                tableTop       += "</tr>";
+
+                var tableBottom = "</table>";
+
+                returnHalfMoonBayCA(tableTop, tableBottom);
+
+                // Chain these out of halfmoon bay to build up the whole report:
+
+                // TableInProgress = returnHuntingTonBeachCA(TableInProgress);
+                // TableInProgress = returnProvidenceRI(TableInProgress);
+                // TableInProgress = returnWrightsvilleBeachNC(TableInProgress);
+
+
+                // ...and modify the DOM from the last of the chained methods:
+
+                // document.getElementById("tidesHereData").innerHTML   = 
+                // TableInProgress + TableBottom;
+
+            }
+
+
+            function returnHalfMoonBayCA(top, bottom) {
+
+                //This is supposed to be quick so dodge the XSS protection
+
+                var url = 
+                    'http://whateverorigin.org/get?url='
+                    + encodeURIComponent(
+                        'https://www.tide-forecast.com/locations/Half-Moon-Bay-California/tides/latest'
+                      ) 
+                    + '&callback=?'; 
+
+                $.getJSON(url, function(data) {
+                    //alert("back from whatever origin with: " + data.contents);
+
+                    var allTidesRegex = /<td.+?<\/td>/gi;
+                    var alltides = data.contents.match(allTidesRegex);
+
+                    //alert("alltides = " + alltides);
+
+                    var tableInProgress = top;
+
+
+                    // Load the tide forecast page for each location and 
+                    // extract information on low tides that occur 
+                    // after sunrise and before sunset. 
+                    // Return the time and height for each daylight low tide,.
+
+                    var accept = false;
+
+                    var countSelected = 0;
+
+                    var i;
+                    for (i = 0; i < alltides.length; i++) {
+
+                        var tableDataEntry = alltides[i];
+
+                        //alert("tableDataEntry = " + tableDataEntry);
+
+                        // Make the string a tag just so can get inner value out
+                        // of it for test -- could use template methods but this is "quick"
+                        var div = document.createElement('div');
+                        div.innerHTML = tableDataEntry.trim();
+                        var asTag = div.firstChild;
+
+                        // alert("before test");
+
+                        if (asTag) {
+                            // alert("tableDataEntry = " + tableDataEntry + 
+                            //      ".textContent = " + asTag.textContent);
+
+                            if (asTag.textContent != "") {
+
+                                // alert("Tag has content so can test it...");
+
+                                if (asTag.textContent == "Sunrise") {
+                                    //alert("Sunrise -- Filter on!");
+                                    accept = true;
+                                }
+
+                                if (asTag.textContent == "Sunset") {
+                                    //alert("Sunset -- Filter off!");
+                                    accept = false;
+                                }
+
+                                if (accept && (asTag.textContent == "Low Tide")) {
+                                    countSelected++;
+                                    //alert("Accept on and Low Tide");
+
+                                    tableInProgress += "<tr><td>" + alltides[i-4] + "</td>";
+                                    tableInProgress +=     "<td>" + alltides[i-3] + "</td>";
+                                    tableInProgress +=     "<td>" + alltides[i-1] + "</td>";
+                                    tableInProgress +=     "<td>" + alltides[i]   + "</td></tr>";
+                                }
+
+                            }
+
+                        }
+
+                    } 
+
+                    //alert("total = " + alltides.length + ", selected = " + countSelected);
+
+                    tableInProgress += bottom;
+
+                    //alert("ready to modify dom... " + tableInProgress);
+                    document.getElementById("tidesHereData").innerHTML   = 
+                    tableInProgress;
+
+                }); 
+            }
+
+            function returnHuntingTonBeachCA(table) {
+                alert("returnHuntingTonBeachCA(top)");
+
+                return table 
+                + "<tr>"
+                      + "<td>"
+                        + "returnHuntingTonBeachCA"
+                      + "</td>"
+                    + "<tr>"
+                ;
+            }
+            function returnProvidenceRI(table) {
+                alert("returnProvidenceRI(top)");
+                
+                return table 
+                + "<tr>"
+                      + "<td>"
+                        + "returnProvidenceRI"
+                      + "</td>"
+                    + "<tr>"
+                ;
+            }
+            function returnWrightsvilleBeachNC(table) {
+                alert("returnWrightsvilleBeachNC(top)");
+                
+                return table 
+                + "<tr>"
+                      + "<td>"
+                        + "returnWrightsvilleBeachNC"
+                      + "</td>"
+                    + "<tr>"
+                ;
+            }
+
+        </script>
+    </head>
+<body>
+
+<h1 align="center">Tidepool Favorites</h1>
+<div style="text-align:center;">
+    <button type="button" class="buttonSimple" 
+        onclick="showTideInformation()">
+        Favorite Tidepools forecast for after sunset!
+    </button>
+</div>
+    
+</br>
+<div id="tidesHereHeader" style="text-align:center;">
+</div>
+ 
+</br>
+<div id="tidesHereData" style="text-align:center;">
+</div>
+
+
+</body>
+</html>
